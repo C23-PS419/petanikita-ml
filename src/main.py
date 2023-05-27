@@ -10,7 +10,7 @@ def get_datasets():
     Returns:
         tuple: A tuple containing the training and validation datasets.
     """
-    ROOT_DIR = os.path.join(os.getcwd(), "dataset", "riceleafs/RiceLeafs")
+    ROOT_DIR = "gs://askdhgakwhd1/RiceLeafs"
 
     TRAIN_DIR = os.path.join(ROOT_DIR, "train")
     VAL_DIR = os.path.join(ROOT_DIR, "validation")
