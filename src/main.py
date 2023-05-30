@@ -85,7 +85,7 @@ def connect_to_tpu(tpu_address: str = None):
 if __name__ == "__main__":
     print("\n")
 
-    cluster_resolver, strategy = connect_to_tpu("node-2")
+    cluster_resolver, strategy = connect_to_tpu("local")
 
     print("Preparing Datasets...\n")
 
@@ -94,33 +94,34 @@ if __name__ == "__main__":
     class_names = train_ds.class_names
     num_classes = len(class_names)
 
+    batch_size = 200
+
     AUTOTUNE = tf.data.AUTOTUNE
-    train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
-    train_ds = strategy.experimental_distribute_dataset(train_ds)
-    val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+    train_ds = train_ds.cache().batch(batch_size, drop_remainder=True).prefetch(buffer_size=AUTOTUNE).repeat()
+    # train_ds = strategy.experimental_distribute_dataset(train_ds)
+    val_ds = val_ds.cache().batch(batch_size, drop_remainder=True).prefetch(buffer_size=AUTOTUNE).repeat()
 
     with strategy.scope():
         model = get_model(num_classes)
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(),
-            metrics=["accuracy", "sparse_categorical_accuracy"],
+            metrics=["accuracy"],
         )
 
-    batch_size = 200
-
-    steps_per_epoch = 60000 // batch_size
-    validation_steps = 10000 // batch_size
+    steps_per_epoch = 6000 // batch_size
+    validation_steps = 1000 // batch_size
 
     print("Fitting Model...\n")
 
-    history = model.fit(
-        train_ds,
-        epochs=30,
-        batch_size=batch_size,
-        validation_data=val_ds,
-        validation_steps=validation_steps,
-        steps_per_epoch=steps_per_epoch,
-    )
+    with strategy.scope():
+        history = model.fit(
+            train_ds,
+            epochs=2,
+            batch_size=batch_size,
+            validation_data=val_ds,
+            validation_steps=validation_steps,
+            steps_per_epoch=steps_per_epoch,
+        )
 
     model.save(os.path.join(os.getcwd(), "model", "rice_leaf_disease_classifier"))
