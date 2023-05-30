@@ -1,5 +1,7 @@
 import os
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 import tensorflow as tf
 
 from model import LeafDiseaseClassifier
@@ -81,8 +83,24 @@ def connect_to_tpu(tpu_address: str = None):
             mirrored_strategy = tf.distribute.MirroredStrategy()
             return None, mirrored_strategy
 
+def get_callbacks():
+    """Returns the callbacks for the model.
+    Returns:
+        list: A list containing the callbacks for the model.
+    """
+    callbacks = [
+        tf.keras.callbacks.TensorBoard(
+            log_dir=os.path.join(os.getcwd(), "logs"),
+        ),
+        tf.keras.callbacks.LearningRateScheduler(
+            lambda epoch, lr: lr * tf.math.exp(-0.1) if epoch > 20 else lr
+        )
+    ]
+
+    return callbacks
 
 if __name__ == "__main__":
+    tf.keras.backend.clear_session()
     print("\n")
 
     cluster_resolver, strategy = connect_to_tpu("local")
@@ -97,31 +115,32 @@ if __name__ == "__main__":
     batch_size = 200
 
     AUTOTUNE = tf.data.AUTOTUNE
-    train_ds = train_ds.cache().batch(batch_size, drop_remainder=True).prefetch(buffer_size=AUTOTUNE).repeat()
+    train_ds = train_ds.cache().repeat().prefetch(buffer_size=AUTOTUNE)
     # train_ds = strategy.experimental_distribute_dataset(train_ds)
-    val_ds = val_ds.cache().batch(batch_size, drop_remainder=True).prefetch(buffer_size=AUTOTUNE).repeat()
+    val_ds = val_ds.cache().repeat().prefetch(buffer_size=AUTOTUNE)
 
     with strategy.scope():
         model = get_model(num_classes)
         model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+            optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(),
             metrics=["accuracy"],
         )
 
-    steps_per_epoch = 6000 // batch_size
-    validation_steps = 1000 // batch_size
+    steps_per_epoch = 40000 // batch_size
+    validation_steps = 10000 // batch_size
 
     print("Fitting Model...\n")
 
     with strategy.scope():
         history = model.fit(
             train_ds,
-            epochs=2,
+            epochs=200,
             batch_size=batch_size,
             validation_data=val_ds,
             validation_steps=validation_steps,
             steps_per_epoch=steps_per_epoch,
+            callbacks=get_callbacks(),
         )
 
     model.save(os.path.join(os.getcwd(), "model", "rice_leaf_disease_classifier"))
