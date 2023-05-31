@@ -45,7 +45,7 @@ def get_model(num_classes=4):
     pre_trained_model = tf.keras.applications.MobileNetV2(
         input_shape=(224, 224, 3),
         include_top=False,
-        weights=None,
+        weights="imagenet",
     )
 
     pre_trained_model.trainable = True
