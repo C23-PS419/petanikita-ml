@@ -14,8 +14,10 @@ class LeafDiseaseClassifier(tf.keras.Model):
 
         self.pre_trained_model = self._get_pretrained_model(input_shape)
 
-        for layer in self.pre_trained_model.layers:
-            layer.trainable = True
+        self.pre_trained_model.trainable = True
+
+        # for layer in self.pre_trained_model.layers:
+        #     layer.trainable = True
 
         self.dropout = tf.keras.layers.Dropout(0.2)
         self.logits = tf.keras.layers.Conv2D(1000, 3, name="logits")
