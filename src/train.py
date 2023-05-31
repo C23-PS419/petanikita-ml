@@ -33,7 +33,6 @@ def get_augmentation():
         tf.keras.layers.RandomFlip("horizontal_and_vertical"),
         tf.keras.layers.RandomRotation(0.2),
         tf.keras.layers.RandomZoom(0.2),
-        tf.keras.layers.Rescaling(1./255)
     ])
 
 
@@ -48,16 +47,17 @@ def get_model(num_classes=4):
         weights="imagenet",
     )
 
-    pre_trained_model.trainable = True
+    for layer in pre_trained_model.layers:
+        layer.trainable = False
 
     model = tf.keras.models.Sequential(
         [
-            # get_augmentation(),
+            tf.keras.layers.Lambda(tf.keras.applications.mobilenet_v2.preprocess_input),
             pre_trained_model,
             tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Conv2D(1000, 3, name="logits"),
+            tf.keras.layers.Conv2D(500, 3),
             tf.keras.layers.Flatten(name="flatten"),
-            tf.keras.layers.Dense(num_classes, activation="softmax", name="prediction"),
+            tf.keras.layers.Dense(num_classes, activation="sigmoid", name="prediction"),
         ]
     )
 
@@ -73,7 +73,7 @@ def get_callbacks():
             log_dir=os.path.join(os.getcwd(), "logs"),
         ),
         tf.keras.callbacks.LearningRateScheduler(
-            lambda epoch, lr: lr * tf.math.exp(-0.1) if epoch > 20 else lr
+            lambda epoch, lr: lr if epoch < 3 else lr * tf.math.exp(-0.1)
         )
     ]
 
@@ -102,15 +102,15 @@ def train(
     batch_size = 200
 
     AUTOTUNE = tf.data.AUTOTUNE
-    train_ds = train_ds.cache().repeat().prefetch(buffer_size=AUTOTUNE)
-    val_ds = val_ds.cache().repeat().prefetch(buffer_size=AUTOTUNE)
+    train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=32).repeat()
+    val_ds = val_ds.cache().prefetch(buffer_size=32).repeat()
     
 
     with strategy.scope():
         model = get_model(num_classes)
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
             metrics=["accuracy"],
         )
 
@@ -122,7 +122,7 @@ def train(
     with strategy.scope():
         history = model.fit(
             train_ds,
-            epochs=200,
+            epochs=50,
             batch_size=batch_size,
             validation_data=val_ds,
             validation_steps=validation_steps,
