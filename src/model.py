@@ -7,6 +7,7 @@ class LeafDiseaseClassifier(tf.keras.Model):
         num_classes (int): Number of classes to classify.
         input_shape (tuple): Input shape of the model.
     """
+
     def __init__(self, num_classes, input_shape=(512, 512, 3), *args, **kwargs):
         super().__init__(name="LeafDiseaseClassifier", *args, **kwargs)
 
