@@ -100,6 +100,9 @@ def main(_):
 
     batch_size = FLAGS.batch_size
 
+    train_ds = train_ds.map(lambda x, y: (x, tf.cast(y, tf.float32)))
+    val_ds = val_ds.map(lambda x, y: (x, tf.cast(y, tf.float32)))
+
     AUTOTUNE = tf.data.AUTOTUNE
     train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE).repeat()
     val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE).repeat()
