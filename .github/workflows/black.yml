@@ -23,7 +23,7 @@ jobs:
     - name: Cleanup Code
       uses: psf/black@stable
       with:
-        options: "--check --verbose"
+        options: "--verbose --diff"
     - name: Add changes
       run: git add .
     - name: Commit changes
