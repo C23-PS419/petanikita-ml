@@ -24,13 +24,17 @@ def define_flags():
     flags.DEFINE_string("export_path", None, "Path to export the model")
     flags.DEFINE_bool("augment_data", False, "Whether to augment the data.")
     flags.DEFINE_integer("batch_size", 200, "The batch size.")
-    flags.DEFINE_string(
-        "tpu", "", "The address of the TPU to connect to."
-    )
+    flags.DEFINE_string("tpu", "", "The address of the TPU to connect to.")
     flags.DEFINE_integer("num_epochs", 10, "The number of epochs to train for.")
-    flags.DEFINE_float("validation_split", 0.2, "The validation split of the training data.")
-    flags.DEFINE_string("pre_trained_model", "MobileNetV2", "The pre-trained model to use.")
-    flags.DEFINE_string("weights", "imagenet", "The weights to use for the pre-trained model.")
+    flags.DEFINE_float(
+        "validation_split", 0.2, "The validation split of the training data."
+    )
+    flags.DEFINE_string(
+        "pre_trained_model", "MobileNetV2", "The pre-trained model to use."
+    )
+    flags.DEFINE_string(
+        "weights", "imagenet", "The weights to use for the pre-trained model."
+    )
 
     flags.mark_flag_as_required("dataset_path")
     flags.mark_flag_as_required("export_path")
@@ -84,7 +88,9 @@ def main(_):
 
     _, strategy = connect_to_tpu(tpu_address=FLAGS.tpu)
 
-    train_ds, val_ds = get_image_dataset_from_directory(FLAGS.dataset_path, validation_split=FLAGS.validation_split)
+    train_ds, val_ds = get_image_dataset_from_directory(
+        FLAGS.dataset_path, validation_split=FLAGS.validation_split
+    )
 
     class_names = train_ds.class_names
     num_classes = len(class_names)
@@ -102,7 +108,10 @@ def main(_):
 
     with strategy.scope():
         model = LeafDiseaseClassifier(
-            num_classes=num_classes, model=FLAGS.pre_trained_model, weights=FLAGS.weights, name=model_basename[1]
+            num_classes=num_classes,
+            model=FLAGS.pre_trained_model,
+            weights=FLAGS.weights,
+            name=model_basename[1],
         )
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),

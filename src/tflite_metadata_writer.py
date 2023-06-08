@@ -21,7 +21,9 @@ FLAGS = flags.FLAGS
 
 
 def define_flags():
-    flags.DEFINE_string("model_file", None, "Path and file name to the TFLite model file.")
+    flags.DEFINE_string(
+        "model_file", None, "Path and file name to the TFLite model file."
+    )
     flags.DEFINE_string("label_file", None, "Path to the label file.")
     flags.DEFINE_string(
         "export_directory",

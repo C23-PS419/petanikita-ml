@@ -89,7 +89,7 @@ class CustomModel(tf.keras.Model):
 
     def __init__(self, num_classes, **kwargs):
         super().__init__(**kwargs)
-        self.preprocess_input = tf.keras.layers.Rescaling(1./255),
+        self.preprocess_input = (tf.keras.layers.Rescaling(1.0 / 255),)
         self.conv1 = CustomConvolutionLayer(32, 3)
         self.conv2 = CustomConvolutionLayer(64, 3)
         self.conv3 = CustomConvolutionLayer(128, 3)
